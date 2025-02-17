@@ -1,64 +1,64 @@
-#/usr/bin/env python3
+#!/usr/bin/env python3
+from flask import Blueprint, request, render_template
 from napalm import get_network_driver
-from ssh_info import load_ssh_info
+from ssh_info import load_ssh_info  # Import function
 
-#load device credentials from file
+ospf_blueprint = Blueprint("ospf", __name__)
+
+# Load router credentials from sshInfo.csv
 routers = load_ssh_info()
 
-# OSPF preconfigurations (router-id, network, areas)
-ospf_data = {
-    "R1": {"router_id": "10.0.0.1", "networks": [("192.51.101.0", "1"), ("10.0.0.1", "1")]},
-    "R2": {"router_id": "20.0.0.1", "networks": [("192.51.101.0", "1"), ("20.0.0.1", "1"), ("172.16.1.0", "0")]},
-    "R3": {"router_id": "30.0.0.1", "networks": [("172.16.1.0", "0"), ("30.0.0.1", "0")]},
-    "R4": {"router_id": "40.0.0.1", "networks": [("192.51.101.0", "1"), ("40.0.0.1", "1"), ("172.16.1.0", "0")]},
-}
+@ospf_blueprint.route("/ospfconfig", methods=["GET", "POST"])
+def ospf_config():
+    """OSPF Configuration Page"""
+    if request.method == "GET":
+        return render_template("ospf.html")  # Load the form
 
+    if request.method == "POST":
+        # Process the form submission
+        router = request.form["router"]
+        if router not in routers:
+            return f"Error: Router {router} is not defined in sshInfo.csv."
 
+        username = request.form["username"]
+        password = request.form["password"]
+        ospf_process_id = request.form["ospf_process_id"]
+        loopback_ip = request.form["loopback_ip"]
+        primary_network = request.form["ospf_network_1"]
+        primary_area = request.form["ospf_area_1"]
 
-# for configure OSPF routing
-def to_configure_ospf(router):
-    if router not in routers:
-        return f"!!! Error: Router {router} not found in sshInfo.csv"
-    details = routers[router]
-    driver = get_network_driver("ios")
-    device = driver(details["ip"], details["username"], details["password"], optional_args={"use_scp" : False})
-    device.open()
+        # Additional fields for R2 and R4
+        secondary_network = request.form.get("ospf_network_2", None)
+        secondary_area = request.form.get("ospf_area_2", None)
+        enable_ecmp = "enable_ecmp" in request.form
 
+        # Retrieve router details
+        router_ip = routers[router]["ip"]
+        driver = get_network_driver("ios")
+        device = driver(router_ip, username, password, optional_args={"use_scp": False})
+        device.open()
 
-    #setting router_id
-    ospf_config = f"""
-    router ospf 1
-      router-id {ospf_data[router]["router_id"]}
-    """
-    #adding network into ospf
-    for net, area in ospf_data[router]["networks"]:
-        ospf_config += f"  network {net} 0.0.0.255 area {area}\n"
-
-
-    # adding equal cost for Router 2 and 4
-    if router in ["R2", "R4"]:
-        ospf_config += """
-        maximum-paths 2
+        # Build OSPF configuration
+        ospf_config = f"""
+        router ospf {ospf_process_id}
+          router-id {loopback_ip}
+          network {primary_network} 0.0.0.255 area {primary_area}
+          network {loopback_ip} 0.0.0.0 area {primary_area}
         """
-    #execute configs
-    device.load_merge_candidate(config=ospf_config)
-    device.commit_config()
-    device.close()
+        if secondary_network and secondary_area:
+            ospf_config += f"""  network {secondary_network} 0.0.0.255 area {secondary_area}
+            """
+        if enable_ecmp:
+            ospf_config += "  maximum-paths 2\n"
 
-    
-    
-    return f"OSPF configured on {router}"
+        # Apply config
+        device.load_merge_candidate(config=ospf_config)
+        device.commit_config()
 
-# executre OSPF configuration on routers
-def configure_all_routers():
-    results = []
-    for router in ospf_data.keys():
-        results.append(to_configure_ospf(router))
-    return "\n".join(results)
+        ospf_output = device.cli(["show ip ospf interface brief"])
+        # Return the OSPF output as response
+        return f"""<h2>OSPF Configuration Applied to {router}</h2><pre>{ospf_output['show ip ospf interface brief']}</pre>  <br>
+             <form action="/ospfconfig" method="get"><button type="submit">Back to Configuration</button></form>"""
+        device.close()
 
-
-
-
-#main func
-if __name__ == "__main__":
-    print(configure_all_routers())
+        return f"OSPF configuration applied to {router}."

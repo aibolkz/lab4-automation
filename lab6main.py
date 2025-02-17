@@ -1,10 +1,7 @@
 #/usr/bin/env python3
-
-
-from flask import Flask, render_template, send_from_directory
-
+from flask import Flask, render_template, send_from_directory, request
 import getconfig
-import ospfconfig
+from ospfconfig import ospf_config, ospf_blueprint
 #import diffconfig
 #import migration
 import os
@@ -23,9 +20,14 @@ def index():
 def get_config():
     return getconfig.get_router_configs()
 
-@app.route('/ospfconfig')
-def to_configure_ospf():
-    return ospfconfig.configure_all_routers()
+@app.route('/ospfconfig', methods=['GET', 'POST'])
+def configure_ospf():
+    if request.method == 'POST':
+        print("Received POST request on /ospfconfig")  # Debugging
+        result = ospf_config()
+        print(f"OSPF Result: {result}")  # Debugging
+        return result  # Show result in browser
+    return render_template('ospf.html')
 
 @app.route('/diffconfig')
 def compare_configs():
