@@ -4,7 +4,7 @@
 from flask import Flask, render_template, send_from_directory
 
 import getconfig
-#import ospfconfig
+import ospfconfig
 #import diffconfig
 #import migration
 import os
@@ -24,7 +24,7 @@ def get_config():
     return getconfig.get_router_configs()
 
 @app.route('/ospfconfig')
-def configure_ospf():
+def to_configure_ospf():
     return ospfconfig.configure_all_routers()
 
 @app.route('/diffconfig')
