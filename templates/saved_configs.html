@@ -2,18 +2,56 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configs Saved</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Configurations Saved</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 </head>
-<body>
-    <h2>Configurations Successfully Saved!</h2>
-    <ul>
-        {% for file in files %}
-            <li><a href="{{ file }}">{{ file }}</a></li>
-        {% endfor %}
-    </ul>
-    <br>
-    <a href="/">Back to Home</a>
+<body class="bg-light">
+
+    <header class="bg-primary py-3">
+        <div class="container text-center">
+            <h1 class="text-white">Configuration Backup</h1>
+        </div>
+    </header>
+
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow-lg">
+                    <div class="card-header bg-success text-white text-center">
+                        <h3><i class="bi bi-check-circle"></i> Configurations Successfully Saved!</h3>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group">
+                            {% for file in files %}
+                            <li class="list-group-item">
+                                <i class="bi bi-file-earmark-text"></i>
+                                <a href="{{ url_for('download_config', filename=file) }}" class="text-primary">
+                                    {{ file }}
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="card-footer text-center">
+                        <a href="/" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Home
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white text-center py-3">
+        <p>© 2025 Network Automation Lab | Designed with using Bootstrap <br>
+            https://bootstrapmade.com/arsha-free-bootstrap-html-template-corporate/</p>
+    </footer>
+
+    <!-- Bootstrap Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-

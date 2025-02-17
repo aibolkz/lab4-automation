@@ -1,13 +1,19 @@
 #/usr/bin/env python3
 
 
-from flask import Flask, render_template
+from flask import Flask, render_template, send_from_directory
+
 import getconfig
 #import ospfconfig
 #import diffconfig
 #import migration
+import os
 
 app = Flask(__name__)
+CONFIG_DIR = os.path.dirname(os.path.abspath(__file__))
+@app.route('/download/<filename>')
+def download_config(filename):
+    return send_from_directory(CONFIG_DIR, filename, as_attachment=True)
 
 @app.route('/')
 def index():
