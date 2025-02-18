@@ -4,11 +4,13 @@ from napalm import get_network_driver
 from ssh_info import load_ssh_info
 import sqlite3
 from prettytable import PrettyTable
+import ipaddress
+import csv
 
 ospf_blueprint = Blueprint("ospf", __name__)
 routers = load_ssh_info()
 
-# Create database if not exists
+#create db if it is not exist
 def create_database():
     with sqlite3.connect("ospf_config.db") as conn:
         cursor = conn.cursor()
@@ -29,6 +31,24 @@ def create_database():
         conn.commit()
 
 create_database()
+
+def check_wrong_ips(file_path="wrong_ips.csv"):
+    try:
+        with open(file_path, mode="r", encoding="utf8") as file:
+            reader = csv.reader(file)
+            return {row[0] for row in reader}
+    except FileNotFoundError:
+        return set()
+
+def validate_ip(ip):
+    wrong_ips = check_wrong_ips()
+    if ip in wrong_ips:
+        return False
+    try:
+        ipaddress.ip_address(str(ip))
+        return True
+    except ValueError:
+        return False
 
 @ospf_blueprint.route("/ospfconfig", methods=["GET", "POST"])
 def ospf_config():
@@ -51,7 +71,31 @@ def ospf_config():
         secondary_area = request.form.get("ospf_area_2")
         enable_ecmp = 1 if "enable_ecmp" in request.form else 0
 
-        # Store details in database
+        
+        #checking correct ip address 
+        try:
+            ipaddress.IPv4Network(primary_network, strict=False)  # strict=False позволяет вводить без маски
+        except ValueError:
+            return f"Error: Invalid primary network {primary_network}. Please enter a valid network"
+
+        if not validate_ip(loopback_ip):
+            return f"Error: Invalid loopback IP {loopback_ip}. Please enter a valid IP."
+        if secondary_network:
+            try:
+                ipaddress.IPv4Network(secondary_network, strict=False)
+            except ValueError:
+                return f"Error: Invalid secondary network {secondary_network}. Please enter a valid network."
+
+        # checking secondary network for R2 and R4
+        if router in ["R2", "R4"]:
+            secondary_network = request.form.get("ospf_network_2", None)
+            secondary_area = request.form.get("ospf_area_2", None)
+
+            if secondary_network and not validate_ip(secondary_network):
+                return f"Error: Invalid secondary network {secondary_network}. Please enter a valid IP."
+
+
+        #save detail on database
         with sqlite3.connect("ospf_config.db") as conn:
             cursor = conn.cursor()
             cursor.execute('''
@@ -68,7 +112,7 @@ def ospf_config():
         device = driver(router_ip, username, password, optional_args={"use_scp": False})
         device.open()
 
-        # Build OSPF config
+        #deploy into OSPF 
         ospf_config = f"""
         router ospf {ospf_process_id}
           router-id {loopback_ip}
@@ -77,23 +121,34 @@ def ospf_config():
         """
         if secondary_network and secondary_area:
             ospf_config += f"  network {secondary_network} 0.0.0.255 area {secondary_area}\n"
+        
+        # **Если маршрутизатор R2 или R4, он становится ABR и добавляет inter-area конфигурацию**
+        if router in ["R2", "R4"] and primary_area != secondary_area:
+            ospf_config += f"  area {primary_area} range {primary_network} 255.255.255.0\n"
+            ospf_config += f"  area {secondary_area} range {secondary_network} 255.255.255.0\n"
+            ospf_config += "  redistribute connected subnets\n"
         if enable_ecmp:
             ospf_config += "  maximum-paths 2\n"
 
-        # Apply config
+        #apply all configis
         device.load_merge_candidate(config=ospf_config)
-        device.commit_config()
-        ospf_output = device.cli(["show ip ospf interface brief"])
-        device.close()
+        diff = device.compare_config()
+        if not diff:
+            device.discard_config()
+            return render_template("ospf.html", show_form=False, ospf_output="No changes applied", ospf_table=None)
 
-        # Fetch stored configurations
+        device.commit_config()
+
+        #extract data from sqlite3
         with sqlite3.connect("ospf_config.db") as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT router, ospf_process_id, router_id, primary_network, primary_area, secondary_network, secondary_area FROM ospf_configs")
             rows = cursor.fetchall()
 
+        
+        #Output
         ospf_table = PrettyTable(["Router", "OSPF Process", "Router ID", "Primary Network", "Primary Area", "Secondary Network", "Secondary Area"])
         for row in rows:
             ospf_table.add_row(row)
 
-        return render_template("ospf.html", show_form=False, ospf_output=ospf_output["show ip ospf interface brief"], ospf_table=ospf_table)
+        return render_template("ospf.html", show_form=False, ospf_output="OSPF Configuration Applied Successfully", ospf_table=ospf_table)

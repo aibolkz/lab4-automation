@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ping Results</title>
+</head>
+<body>
+    <h2>Ping Results</h2>
+    <table border="1">
+        <tr>
+            <th>Router</th>
+            <th>Loopback IP</th>
+            <th>Status</th>
+        </tr>
+        {% if results %}
+            {% for router, data in results.items() %}
+            <tr>
+                <td>{{ router }}</td>
+                <td>{{ data.ip }}</td>
+                <td>{{ data.status }}</td>
+            </tr>
+            {% endfor %}
+        {% else %}
+            <tr><td colspan="3">No results available</td></tr>
+        {% endif %}
+    </table>
+
+    <br>
+    <a href="/">Back to Main</a>
+</body>
+</html>

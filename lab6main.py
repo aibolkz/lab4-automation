@@ -5,8 +5,12 @@ from ospfconfig import ospf_config, ospf_blueprint
 #import diffconfig
 #import migration
 import os
+from ping_loopbacks import ping_from_r1
+
 
 app = Flask(__name__)
+
+
 CONFIG_DIR = os.path.dirname(os.path.abspath(__file__))
 @app.route('/download/<filename>')
 def download_config(filename):
@@ -23,15 +27,26 @@ def get_config():
 @app.route('/ospfconfig', methods=['GET', 'POST'])
 def configure_ospf():
     if request.method == 'POST':
-        print("Received POST request on /ospfconfig")  # Debugging
+        #debugging output for flask
+        print("Received POST request on /ospfconfig")
         result = ospf_config()
-        print(f"OSPF Result: {result}")  # Debugging
+        #debugging output for flask
+        print(f"OSPF Result: {result}")  
         return result  # Show result in browser
     return render_template('ospf.html')
+
+#app.register_blueprint(ospf_blueprint)
+#app.register_blueprint(ping_blueprint)
+
 
 @app.route('/diffconfig')
 def compare_configs():
     return diffconfig.compare_all_configs()
+
+@app.route('/ping')
+def ping_page():
+    results = ping_from_r1()  # Запускаем ping через функцию
+    return render_template('ping.html', results=results)
 
 @app.route('/migration')
 def migrate():
