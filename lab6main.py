@@ -6,13 +6,14 @@ from ospfconfig import ospf_config, ospf_blueprint
 import os
 from ping_loopbacks import ping_from_r1
 from diffconfig import diff_blueprint
+from migration import migration_blueprint
 
 
 
 app = Flask(__name__)
 app.register_blueprint(diff_blueprint)
 
-
+app.register_blueprint(migration_blueprint)
 
 CONFIG_DIR = os.path.dirname(os.path.abspath(__file__))
 @app.route('/download/<filename>')
