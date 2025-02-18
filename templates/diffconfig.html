@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Config Differences</title>
+</head>
+<body>
+    <h2>Configuration Differences</h2>
+    {% for router, diff in diffs.items() %}
+        <h3>{{ router }}</h3>
+        <pre>{{ diff }}</pre>
+    {% endfor %}
+    <br>
+    <a href="/">Back to Main</a>
+</body>
+</html>
