@@ -5,7 +5,7 @@ from ssh_info import load_ssh_info  # Import function
 
 ospf_blueprint = Blueprint("ospf", __name__)
 
-# Load router credentials from sshInfo.csv
+#router credentials from sshInfo.csv
 routers = load_ssh_info()
 
 @ospf_blueprint.route("/ospfconfig", methods=["GET", "POST"])
@@ -27,12 +27,12 @@ def ospf_config():
         primary_network = request.form["ospf_network_1"]
         primary_area = request.form["ospf_area_1"]
 
-        # Additional fields for R2 and R4
+        #fields for R2 and R4
         secondary_network = request.form.get("ospf_network_2", None)
         secondary_area = request.form.get("ospf_area_2", None)
         enable_ecmp = "enable_ecmp" in request.form
 
-        # Retrieve router details
+        #router details
         router_ip = routers[router]["ip"]
         driver = get_network_driver("ios")
         device = driver(router_ip, username, password, optional_args={"use_scp": False})
@@ -51,7 +51,7 @@ def ospf_config():
         if enable_ecmp:
             ospf_config += "  maximum-paths 2\n"
 
-        # Apply config
+        #applying config
         device.load_merge_candidate(config=ospf_config)
         device.commit_config()
 
