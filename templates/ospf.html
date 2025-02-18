@@ -2,69 +2,79 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OSPF Configuration</title>
     <script>
-        function toggleAdditionalFields() {
-            var router = document.getElementById("router").value;
-            var extraFields = document.getElementById("extraFields");
-
+        function toggleExtraFields() {
+            let router = document.getElementById("router").value;
+            let extraFields = document.getElementById("extraFields");
             if (router === "R2" || router === "R4") {
-                extraFields.style.display = "block";  // Show additional fields
+                extraFields.style.display = "block";
             } else {
-                extraFields.style.display = "none";   // Hide additional fields
+                extraFields.style.display = "none";
             }
         }
     </script>
 </head>
 <body>
-    <h2>OSPF Configuration</h2>
-    
-    <form action="/ospfconfig" method="post">
-        <label for="router">Choose a Router:</label>
-        <select id="router" name="router" onchange="toggleAdditionalFields()">
-            <option value="R1">R1</option>
-            <option value="R2">R2</option>
-            <option value="R3">R3</option>
-            <option value="R4">R4</option>
-        </select>
 
-        <h3>Login Credentials</h3>
-        <label>Enter Username:</label>
-        <input type="text" name="username" required>
-        
-        <label>Enter Password:</label>
-        <input type="password" name="password" required>
+<h2>OSPF Configuration</h2>
+<form action="/ospfconfig" method="POST">
+    <label for="router">Choose a Router:</label>
+    <select name="router" id="router" onchange="toggleExtraFields()">
+        <option value="R1">R1</option>
+        <option value="R2">R2</option>
+        <option value="R3">R3</option>
+        <option value="R4">R4</option>
+    </select>
+    <br>
+    <br>
 
-        <h3>OSPF Information</h3>
-        <label>OSPF Process ID:</label>
-        <input type="text" name="ospf_process_id" required>
+    <label>Enter Username:</label>
+    <input type="text" name="username" required><br>
+    <br>
 
-        <label>Loopback IP:</label>
-        <input type="text" name="loopback_ip" required>
+    <label>Enter Password:</label>
+    <input type="password" name="password" required><br>
+    <br>
+    <label>OSPF Process ID:</label>
+    <input type="text" name="ospf_process_id" required><br>
+    <br>
+    <label>Loopback IP:</label>
+    <input type="text" name="loopback_ip" required><br>
+    <br>
+    <label>Primary OSPF Network:</label>
+    <input type="text" name="ospf_network_1" required><br>
+    <br>
+    <label>Primary OSPF Area:</label>
+    <input type="text" name="ospf_area_1" required><br>
+    <br>
+    <!-- Extra fields for R2 and R4 -->
+    <div id="extraFields" style="display: none;">
+        <h3>Additional OSPF Configuration</h3>
+        <label>Secondary OSPF Network:</label>
+        <input type="text" name="ospf_network_2"><br>
+        <br>
+        <label>Secondary OSPF Area:</label>
+        <input type="text" name="ospf_area_2"><br>
+        <br>
+        <label>Enable Equal Cost Multipath (ECMP):</label>
+        <input type="checkbox" name="enable_ecmp"><br>
+    </div>
 
-        <h3>Network Configuration</h3>
-        <label>Primary OSPF Network:</label>
-        <input type="text" name="ospf_network_1" required>
+    <button type="submit">Configure OSPF</button>
+</form>
 
-        <label>Primary OSPF Area:</label>
-        <input type="text" name="ospf_area_1" required>
+{% if not show_form %}
+    <h2>OSPF Configuration Applied</h2>
+    <pre>{{ ospf_output }}</pre>
 
-        <!-- Additional fields for R2 and R4 -->
-        <div id="extraFields" style="display: none;">
-            <h3>Additional OSPF Configuration</h3>
-            <label>Secondary OSPF Network:</label>
-            <input type="text" name="ospf_network_2">
+    <h2>Stored OSPF Configurations</h2>
+    <pre>{{ ospf_table }}</pre>
 
-            <label>Secondary OSPF Area:</label>
-            <input type="text" name="ospf_area_2">
-
-            <label>Enable ECMP:</label>
-            <input type="checkbox" name="enable_ecmp">
-        </div>
-
-        <br><br>
-        <button type="submit">Configure OSPF</button>
+    <form action="/ospfconfig" method="get">
+        <button type="submit">Back to Configuration</button>
     </form>
+{% endif %}
+
 </body>
 </html>
